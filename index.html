@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Word Scramble Game</title>
+    <style>
+
+
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center; /* Added for vertical centering */
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #6e8efb 0%, #a777e3 100%);
+            min-height: 100vh;
+            color: #2c3e50;
+            box-sizing: border-box; /* Added to include padding in height calc */
+        }
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.95);
+            padding: clamp(1.5rem, 5vw, 3rem); /* Responsive padding */
+            border-radius: 20px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+            transform-origin: center;
+            animation: fadeIn 0.7s ease-out;
+            max-width: min(90%, 600px); /* Responsive width */
+            width: 100%;
+            backdrop-filter: blur(10px);
+            margin: auto; /* Center horizontally */
+            overflow-y: auto; /* Allow scrolling if content is too tall */
+            max-height: 95vh; /* Prevent overflow on small screens */
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        input {
+            padding: 15px 20px;
+            margin: 20px;
+            border: 3px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: clamp(16px, 2vw, 18px); /* Responsive font size */
+            transition: all 0.4s ease;
+            width: min(250px, 80%); /* Responsive width */
+            background: rgba(255, 255, 255, 0.9);
+        }
+        input:focus {
+            outline: none;
+            border-color: #6e8efb;
+            box-shadow: 0 0 15px rgba(110,142,251,0.3);
+            transform: scale(1.02);
+        }
+        button {
+            padding: 12px 25px;
+            margin: 12px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(45deg, #6e8efb, #a777e3);
+            color: white;
+            font-size: clamp(14px, 1.5vw, 16px); /* Responsive font size */
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        button:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+        button:disabled {
+            background: linear-gradient(45deg, #ccc, #ddd);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        #scrambled-word {
+            font-size: clamp(2rem, 5vw, 3.5rem); /* Responsive font size */
+            color: #6e8efb;
+            margin: 25px;
+            letter-spacing: clamp(4px, 1vw, 8px); /* Responsive letter spacing */
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            font-weight: bold;
+            transition: all 0.5s ease;
+        }
+        #scrambled-word:hover {
+            transform: scale(1.1);
+            letter-spacing: clamp(6px, 1.5vw, 12px); /* Responsive letter spacing */
+        }
+        #hint {
+            color: #555;
+            font-style: italic;
+            min-height: 24px;
+            padding: 10px;
+            border-radius: 8px;
+            background: rgba(110,142,251,0.1);
+            margin: 15px auto;
+            max-width: 80%;
+            font-size: clamp(14px, 1.5vw, 16px); /* Responsive font size */
+        }
+        .shake {
+            animation: shake 0.6s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-15px) rotate(-2deg); }
+            40% { transform: translateX(15px) rotate(2deg); }
+            60% { transform: translateX(-15px) rotate(-1deg); }
+            80% { transform: translateX(15px) rotate(1deg); }
+        }
+        .success {
+            animation: success 0.8s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+        }
+        @keyframes success {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+            70% { transform: rotate(5deg); }
+            85% { transform: rotate(-5deg); }
+            100% { transform: scale(1) rotate(0); }
+        }
+        .win-modal, .lose-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255,255,255,0.97);
+            padding: clamp(1.5rem, 5vw, 3rem); /* Responsive padding */
+            border-radius: 20px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+            z-index: 1000;
+            text-align: center;
+            animation: modalFadeIn 0.7s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+            backdrop-filter: blur(15px);
+            min-width: min(300px, 90vw); /* Responsive width */
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: translate(-50%, -70%) scale(0.8); }
+            to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 999;
+            backdrop-filter: blur(5px);
+        }
+        #score-display {
+            font-size: clamp(1rem, 1.5vw, 1.2rem); /* Responsive font size */
+            color: #6e8efb;
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 10px;
+            background: rgba(110,142,251,0.1);
+            display: inline-block;
+        }
+        .progress-bar {
+            width: 80%;
+            height: 10px;
+            background: #e0e0e0;
+            border-radius: 5px;
+            margin: 15px auto;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(45deg, #6e8efb, #a777e3);
+            transition: width 0.5s ease;
+        }
+        .timer {
+            font-size: clamp(1rem, 1.5vw, 1.2rem); /* Responsive font size */
+            color: #a777e3;
+            margin: 10px 0;
+        }
+
+        /* Added media queries for better mobile support */
+        @media (max-width: 480px) {
+            .container {
+                padding: 1.5rem;
+            }
+            
+            button {
+                padding: 10px 20px;
+                margin: 8px;
+            }
+            
+            input {
+                margin: 10px;
+                padding: 10px 15px;
+            }
+        }
+
+                .nav-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 1rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-bar a {
+            color: #6e8efb;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            margin: 0 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        .nav-bar a:hover {
+            background: rgba(110, 142, 251, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .footer p {
+            margin: 0;
+            color: #2c3e50;
+        }
+
+        .footer a {
+            color: #6e8efb;
+            text-decoration: none;
+            margin: 0 10px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            animation: fadeIn 0.5s ease-out 1s forwards;
+
+        }
+
+        .footer a:hover {
+            color: #a777e3;
+            text-decoration: underline;
+        }
+        
+    </style>
+</head>
+<body>
+
+<nav class="nav-bar">
+    <a href="index.html">Game1</a>
+    <a href="game2.html">Game2</a>
+    <a href="game3.html">Game3</a>
+    <a href="about.html">About</a>
+</nav>
+
+    <div class="container">
+        <h1>Word Scramble Challenge</h1>
+        <div class="timer">Time: <span id="time">60</span>s</div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress"></div>
+        </div>
+        <p>Decode the scrambled word:</p>
+        <h2 id="scrambled-word"></h2>
+        <p id="hint"></p>
+        <p id="extra-hint" style="color: #a777e3; font-weight: bold;"></p>
+        <input type="text" id="user-guess" placeholder="Type your answer here..." autocomplete="off">
+        <button onclick="checkGuess()" id="submit-btn">Submit Answer</button>
+        <div id="score-display">
+            Attempts: <span id="tries">0</span> | Win Streak: <span id="win-streak">0</span>
+        </div>
+        <button onclick="newGame()" class="new-game-btn">New Challenge</button>
+    </div>
+
+    <div class="overlay" id="overlay"></div>
+    <div class="win-modal" id="win-modal">
+        <h2>🎉 Brilliant! 🎉</h2>
+        <p>You've decoded the word:</p>
+        <h3 style="color: #6e8efb; font-size: 2rem;" id="solved-word"></h3>
+        <p>Attempts needed: <span id="final-tries"></span></p>
+        <p>Current Win Streak: <span id="final-streak"></span></p>
+        <button onclick="closeWinModal()">Next Challenge</button>
+    </div>
+
+    <div class="lose-modal" id="lose-modal">
+        <h2>⏰ Time's Up! ⏰</h2>
+        <p>The word was:</p>
+        <h3 style="color: #6e8efb; font-size: 2rem;" id="lost-word"></h3>
+        <p>Better luck next time!</p>
+        <p>Win Streak Lost: <span id="lost-streak"></span></p>
+        <button onclick="closeLoseModal()">Try Again</button>
+    </div>
+
+    <footer class="footer">
+        <p>Check out my work:
+            <a href="https://github.com/Jac869?tab=repositories" target="_blank">GitHub</a>
+            <a href="https://jac869.github.io/Portfolio/" target="_blank">Portfolio</a>
+        </p>
+    </footer>
+    <script>
+        const wordList = [
+            { word: 'javascript', hint: 'A popular programming language for web development', extraHint: 'Starts with J, runs in browsers' },
+            { word: 'python', hint: 'A snake-named programming language', extraHint: 'Named after a reptile' },
+            { word: 'programming', hint: 'The act of writing code', extraHint: 'Telling computers what to do' },
+            { word: 'computer', hint: 'An electronic device that processes data', extraHint: 'You use this every day' },
+            { word: 'algorithm', hint: 'A step-by-step procedure for calculations', extraHint: 'Like a recipe for solving problems' },
+            { word: 'database', hint: 'A structured set of data', extraHint: 'Stores information in tables' }
+        ];
+        let currentWordObj = '';
+        let scrambledWord = '';
+        let tries = 0;
+        let gameWon = false;
+        let canSubmit = true;
+        let timeLeft = 60;
+        let timer;
+        let winStreak = 0;
+
+        function updateTimer() {
+            timeLeft--;
+            document.getElementById('time').textContent = timeLeft;
+            document.getElementById('progress').style.width = `${(timeLeft/60)*100}%`;
+            
+            if (timeLeft <= 0) {
+                clearInterval(timer);
+                document.getElementById('lost-streak').textContent = winStreak;
+                winStreak = 0;
+                document.getElementById('win-streak').textContent = winStreak;
+                showLoseModal();
+                disableSubmit();
+            }
+        }
+
+        function scrambleWord(word) {
+            let scrambled = word;
+            while (scrambled === word) {
+                scrambled = word.split('').sort(() => Math.random() - 0.5).join('');
+            }
+            return scrambled;
+        }
+
+        function enableSubmit() {
+            canSubmit = true;
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = false;
+        }
+
+        function disableSubmit() {
+            canSubmit = false;
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = true;
+            setTimeout(enableSubmit, 1000);
+        }
+
+        function newGame() {
+            clearInterval(timer);
+            timeLeft = 60;
+            timer = setInterval(updateTimer, 1000);
+            
+            const container = document.querySelector('.container');
+            container.classList.remove('success');
+            gameWon = false;
+            enableSubmit();
+            
+            currentWordObj = wordList[Math.floor(Math.random() * wordList.length)];
+            scrambledWord = scrambleWord(currentWordObj.word);
+            
+            const scrambledElement = document.getElementById('scrambled-word');
+            scrambledElement.style.opacity = '0';
+            setTimeout(() => {
+                scrambledElement.textContent = scrambledWord;
+                scrambledElement.style.opacity = '1';
+            }, 200);
+            
+            document.getElementById('user-guess').value = '';
+            document.getElementById('hint').textContent = '';
+            document.getElementById('extra-hint').textContent = '';
+            tries = 0;
+            document.getElementById('tries').textContent = tries;
+            document.getElementById('progress').style.width = '100%';
+        }
+
+        function showWinModal() {
+            gameWon = true;
+            clearInterval(timer);
+            winStreak++;
+            document.getElementById('win-streak').textContent = winStreak;
+            document.getElementById('overlay').style.display = 'block';
+            document.getElementById('win-modal').style.display = 'block';
+            document.getElementById('solved-word').textContent = currentWordObj.word;
+            document.getElementById('final-tries').textContent = tries;
+            document.getElementById('final-streak').textContent = winStreak;
+        }
+
+        function showLoseModal() {
+            document.getElementById('overlay').style.display = 'block';
+            document.getElementById('lose-modal').style.display = 'block';
+            document.getElementById('lost-word').textContent = currentWordObj.word;
+        }
+
+        function closeWinModal() {
+            document.getElementById('overlay').style.display = 'none';
+            document.getElementById('win-modal').style.display = 'none';
+            newGame();
+        }
+
+        function closeLoseModal() {
+            document.getElementById('overlay').style.display = 'none';
+            document.getElementById('lose-modal').style.display = 'none';
+            newGame();
+        }
+
+        function checkGuess() {
+            if (gameWon || !canSubmit || timeLeft <= 0) return;
+            
+            disableSubmit();
+            const guess = document.getElementById('user-guess').value.toLowerCase();
+            const container = document.querySelector('.container');
+            tries++;
+            document.getElementById('tries').textContent = tries;
+
+            if (guess === currentWordObj.word) {
+                container.classList.add('success');
+                setTimeout(() => {
+                    showWinModal();
+                }, 500);
+            } else {
+                container.classList.add('shake');
+                setTimeout(() => {
+                    container.classList.remove('shake');
+                }, 500);
+                document.getElementById('user-guess').value = '';
+                document.getElementById('hint').textContent = `Hint: ${currentWordObj.hint}`;
+                
+                if (tries >= 3) {
+                    document.getElementById('extra-hint').textContent = `Extra Hint: ${currentWordObj.extraHint}`;
+                }
+            }
+        }
+
+        document.getElementById('user-guess').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkGuess();
+            }
+        });
+
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                if (gameWon) {
+                    closeWinModal();
+                } else if (document.getElementById('lose-modal').style.display === 'block') {
+                    closeLoseModal();
+                }
+            }
+        });
+
+        window.onload = newGame;
+    </script>
+</body>
+</html>
